@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>FocusedMind</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div id="setup-view">
+      <h1>FocusedMind</h1>
+      <p class="text-center">Be focused! Win the game.</p>
+      <label>Task:</label>
+      <input type="text" id="task" placeholder="What will you focus on?" />
+      <div id="task-error" class="error-message" style="display: none">
+        Please enter a task to focus on.
+      </div>
+
+      <label>Duration (minutes):</label>
+      <input type="number" id="duration" min="15" />
+      <div id="duration-error" class="error-message" style="display: none">
+        Please set the duration. 15-30 minutes of a focused session is most
+        effective.
+      </div>
+
+      <label>Block Categories:</label>
+      <div id="categories">
+        <label class="checkbox-label">
+          <input type="checkbox" value="entertainment" /> Entertainment
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" value="social" /> Social Media
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" value="news" /> News
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" value="adult" /> Adult Content
+        </label>
+      </div>
+
+      <label>Custom URLs to Block:</label>
+      <div id="custom-urls">
+        <input
+          type="url"
+          id="url-input"
+          placeholder="Enter website URL (e.g., example.com)"
+        />
+        <button type="button" id="add-url">Add</button>
+        <div id="url-list"></div>
+      </div>
+
+      <label>Exclude Sites (Whitelist Mode):</label>
+      <div id="exclude-sites">
+        <input
+          type="text"
+          id="exclude-input"
+          placeholder="e.g: uedemy.com, stackoverflow.com"
+        />
+        <div class="help-text">
+          Enter comma-separated URLs. Only these sites will be accessible during
+          focus mode.
+        </div>
+      </div>
+
+      <button id="start">Start Focus</button>
+    </div>
+
+    <div id="active-view" style="display: none">
+      <h1>Focus Active</h1>
+      <div id="task-display"></div>
+      <div id="countdown"></div>
+      <div id="distraction-count">
+        Distractions: <span id="distraction-number">0</span>
+      </div>
+      <div id="efficiency-rating">
+        Efficiency: <span id="efficiency-display">Excellent &#127919;</span>
+      </div>
+      <button id="stop">Stop Focus</button>
+    </div>
+
+    <div id="completion-view" style="display: none">
+      <h1>Session Complete!</h1>
+      <div id="completion-task-display"></div>
+      <div id="completion-duration"></div>
+      <div id="completion-distraction-count">
+        Total Distractions: <span id="completion-distraction-number">0</span>
+      </div>
+      <div id="completion-efficiency-rating">
+        Final Efficiency:
+        <span id="completion-efficiency-display">Excellent &#127919;</span>
+      </div>
+      <div id="completion-message"></div>
+      <button id="reset">Start New Session</button>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
