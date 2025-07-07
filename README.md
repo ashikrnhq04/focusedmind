@@ -53,6 +53,8 @@ FocusedMind is a powerful Chrome extension designed to help you maintain laser-s
 4. Click "Load unpacked" and select the FocusedMind folder
 5. The extension icon will appear in your Chrome toolbar
 
+**This extension submitted to Chrome store and is under review. I'll add the extension URL once it's approved**
+
 ### Quick Start
 
 1. **Set your task**: Enter what you want to focus on
