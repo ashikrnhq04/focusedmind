@@ -274,12 +274,6 @@ function calculateEfficiency(distractionCount, sessionDuration) {
   // Calculate efficiency based on total distractions vs time elapsed
   // More distractions = worse efficiency
 
-  console.log(
-    `Efficiency calc: ${distractionCount} distractions in ${sessionDuration.toFixed(
-      1
-    )} minutes`
-  );
-
   let rating, message, emoji;
 
   // Simple threshold based on total distractions (easier to understand)
@@ -320,10 +314,6 @@ function updateEfficiencyDisplay(distractionCount, sessionDuration) {
 
   // Update the display text
   efficiencyDisplay.innerHTML = `${efficiency.message} ${efficiency.emoji}`;
-
-  console.log(
-    `Efficiency: ${efficiency.message} (${distractionCount} distractions in ${sessionDuration} min session)`
-  );
 }
 
 async function startFocus() {
@@ -392,16 +382,6 @@ async function startFocus() {
   const startTime = Date.now();
   const endTime = startTime + duration * 60 * 1000;
 
-  console.log("=== STARTING FOCUS SESSION ===");
-  console.log("Task:", task);
-  console.log("Duration:", duration, "minutes");
-  console.log("Selected categories:", selectedCategories);
-  console.log("Custom URLs:", customUrls);
-  console.log("Exclude sites (whitelist):", excludeSites);
-  console.log("Whitelist mode:", excludeSites.length > 0);
-  console.log("FORCE RESETTING distractions to 0");
-  console.log("================================");
-
   // First clear the entire storage related to focus session
   await chrome.storage.local.remove([
     "distractions",
@@ -430,10 +410,6 @@ async function startFocus() {
 
   // Verify the reset worked
   const verifyData = await chrome.storage.local.get(["distractions"]);
-  console.log(
-    "✅ Verified distraction count after reset:",
-    verifyData.distractions
-  );
 
   chrome.runtime.sendMessage({ type: "START_FOCUS" });
 
@@ -445,8 +421,6 @@ async function startFocus() {
 }
 
 async function stopFocus(showCompletion = false, isManualStop = false) {
-  console.log("🛑 Stopping focus session and resetting distraction count");
-
   // Get current session data before clearing
   const sessionData = await chrome.storage.local.get([
     "task",
@@ -486,10 +460,6 @@ async function stopFocus(showCompletion = false, isManualStop = false) {
 
   // Verify the reset worked
   const verifyData = await chrome.storage.local.get(["distractions"]);
-  console.log(
-    "✅ Verified distraction count after stop:",
-    verifyData.distractions
-  );
 
   chrome.runtime.sendMessage({ type: "STOP_FOCUS" });
 
@@ -552,10 +522,6 @@ function switchToActiveView() {
       "task-display"
     ).textContent = `Focusing on: ${data.task}`;
     const distractionCount = data.distractions || 0;
-    console.log(
-      "🎯 Switching to active view - distraction count:",
-      distractionCount
-    );
     document.getElementById("distraction-number").textContent =
       distractionCount + " times";
 
@@ -711,21 +677,12 @@ async function updateCountdown() {
 
   // Update distraction count
   const distractionCount = data.distractions || 0;
-  console.log("📊 Current distraction count from storage:", distractionCount);
   document.getElementById("distraction-number").textContent =
     distractionCount + " times";
 
   // Calculate session duration in minutes (how much time has passed)
   const totalSessionTime = (data.endTime - data.startTime) / 60000; // Total session length in minutes
   const elapsedTime = (data.endTime - timeLeft) / 60000; // Time elapsed in minutes
-
-  console.log(
-    "⏱️ Session timing - Elapsed:",
-    elapsedTime.toFixed(1),
-    "min, Total:",
-    totalSessionTime.toFixed(1),
-    "min"
-  );
 
   // Only show efficiency after at least 2 minutes have passed
   if (elapsedTime >= 2) {

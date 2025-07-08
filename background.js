@@ -2,8 +2,6 @@
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.type === "START_FOCUS") {
-    console.log("Focus session started");
-
     // Set badge to show focus is active
     chrome.action.setBadgeText({ text: "ON" });
     chrome.action.setBadgeBackgroundColor({ color: "#28a745" });
@@ -11,8 +9,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     // Inject content script into all existing tabs
     await injectContentScriptIntoAllTabs();
   } else if (message.type === "STOP_FOCUS") {
-    console.log("Focus session stopped");
-
     // Clear badge
     chrome.action.setBadgeText({ text: "" });
 
@@ -44,16 +40,12 @@ async function removeOverlaysFromAllTabs() {
           target: { tabId: tab.id },
           func: removeOverlay,
         });
-        console.log(`Overlay removed from tab: ${tab.url}`);
       } catch (error) {
-        console.log(
-          `Failed to remove overlay from tab ${tab.url}:`,
-          error.message
-        );
+        // Failed to remove overlay from tab
       }
     }
   } catch (error) {
-    console.error("Error removing overlays:", error);
+    // Error removing overlays
   }
 }
 
@@ -89,11 +81,11 @@ async function injectContentScriptIntoAllTabs() {
           files: ["content.js"],
         });
       } catch (error) {
-        console.log(`Failed to inject into tab ${tab.url}:`, error.message);
+        // Failed to inject into tab
       }
     }
   } catch (error) {
-    console.error("Error injecting content scripts:", error);
+    // Error injecting content scripts
   }
 }
 
@@ -120,8 +112,6 @@ setInterval(async () => {
 
     // Remove all overlays from all tabs
     await removeOverlaysFromAllTabs();
-
-    console.log("Focus session automatically ended (time expired)");
   }
 }, 5000); // Check every 5 seconds
 

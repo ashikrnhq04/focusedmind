@@ -451,27 +451,11 @@ function checkIfBlocked() {
       "whitelistMode",
     ],
     (data) => {
-      console.log("=== FOCUS MODE DEBUG ===");
-      console.log("Focus active:", data.focusActive);
-      console.log("End time:", data.endTime, "Current time:", Date.now());
-      console.log(
-        "Time remaining:",
-        data.endTime ? Math.max(0, data.endTime - Date.now()) / 1000 / 60 : 0,
-        "minutes"
-      );
-      console.log("All focus data:", JSON.stringify(data, null, 2)); // Debug log
-
       if (!data.focusActive || Date.now() >= data.endTime) {
-        console.log(
-          "❌ Focus not active or expired - removing any existing overlay"
-        );
         // Remove any existing overlay when focus is not active
         const existingOverlay = document.getElementById("focus-overlay");
         if (existingOverlay) {
           existingOverlay.remove();
-          console.log(
-            "🗑️ Removed existing overlay because focus is not active"
-          );
         }
         return;
       }
@@ -482,30 +466,17 @@ function checkIfBlocked() {
       const excludeSites = data.excludeSites || [];
       const whitelistMode = data.whitelistMode || false;
 
-      console.log("🌐 Current hostname:", hostname);
-      console.log("📋 Blocked categories:", blockedCategories);
-      console.log("🚫 Custom URLs:", customUrls);
-      console.log("✅ Exclude sites (whitelist):", excludeSites);
-      console.log("🎯 Whitelist mode:", whitelistMode);
-
       let shouldBlock = false;
       let blockReason = "";
 
       // WHITELIST MODE: If exclude sites are specified, block everything except those sites
       // This mode takes priority over all other blocking rules
       if (excludeSites.length > 0) {
-        console.log(
-          "🔍 Whitelist mode active - checking if site is allowed..."
-        );
         let isInWhitelist = false;
 
         for (const excludeSite of excludeSites) {
-          console.log(
-            `   Comparing "${hostname}" with whitelist entry "${excludeSite}"`
-          );
           if (domainMatches(hostname, excludeSite)) {
             isInWhitelist = true;
-            console.log("✅ Site is whitelisted:", excludeSite);
             break;
           }
         }
@@ -513,11 +484,6 @@ function checkIfBlocked() {
         if (!isInWhitelist) {
           shouldBlock = true;
           blockReason = "whitelist mode (site not in allowed list)";
-          console.log(
-            "🚫 BLOCKED by whitelist mode - site not in allowed list"
-          );
-        } else {
-          console.log("✅ ALLOWED by whitelist mode");
         }
       } else {
         // NORMAL BLOCKING MODE: Use categories and custom URLs
@@ -529,7 +495,6 @@ function checkIfBlocked() {
         ) {
           shouldBlock = true;
           blockReason = "entertainment (YouTube content)";
-          console.log("Blocked YouTube entertainment content"); // Debug log
         }
 
         // Check custom URLs first
@@ -538,7 +503,6 @@ function checkIfBlocked() {
             if (domainMatches(hostname, url)) {
               shouldBlock = true;
               blockReason = "custom";
-              console.log("Blocked by custom URL:", url); // Debug log
               break;
             }
           }
@@ -553,12 +517,6 @@ function checkIfBlocked() {
               if (blockedCategories.includes(category)) {
                 shouldBlock = true;
                 blockReason = category;
-                console.log(
-                  "Blocked by known site category:",
-                  category,
-                  "for domain:",
-                  domain
-                ); // Debug log
                 break;
               }
             }
@@ -573,30 +531,15 @@ function checkIfBlocked() {
             ) {
               shouldBlock = true;
               blockReason = detectedCategory;
-              console.log(
-                "Blocked by intelligent detection:",
-                detectedCategory,
-                "for hostname:",
-                hostname
-              ); // Debug log
             }
           }
         }
       }
 
       if (shouldBlock) {
-        console.log(
-          "🚨 FINAL RESULT: Showing overlay for task:",
-          data.task,
-          "| Block reason:",
-          blockReason
-        );
         injectOverlay(data.task, blockReason);
         incrementDistraction();
-      } else {
-        console.log("✅ FINAL RESULT: Site not blocked");
       }
-      console.log("=== END DEBUG ===");
     }
   );
 }
@@ -670,8 +613,6 @@ function createOverlay(task, blockReason = "") {
     document.appendChild(overlay);
   }
 
-  console.log("Overlay injected successfully"); // Debug log
-
   // Add click to close functionality
   overlay.addEventListener("click", () => {
     overlay.remove();
@@ -693,7 +634,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const existingOverlay = document.getElementById("focus-overlay");
     if (existingOverlay) {
       existingOverlay.remove();
-      console.log("Focus overlay removed via message");
     }
     sendResponse({ success: true });
   }
@@ -703,7 +643,6 @@ function incrementDistraction() {
   chrome.storage.local.get("distractions", (data) => {
     let count = data.distractions || 0;
     chrome.storage.local.set({ distractions: count + 1 });
-    console.log("Distraction count incremented to:", count + 1); // Debug log
   });
 }
 
@@ -711,12 +650,10 @@ function incrementDistraction() {
 function initializeBlocking() {
   // Prevent duplicate initialization
   if (window.focusModeInitialized) {
-    console.log("Focus mode already initialized, checking if blocked");
     checkIfBlocked();
     return;
   }
 
-  console.log("Initializing focus mode blocking on:", window.location.hostname);
   window.focusModeInitialized = true;
   checkIfBlocked();
 }
@@ -731,14 +668,12 @@ if (document.readyState === "loading") {
 // Also check when the page becomes visible (in case user switches tabs back)
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
-    console.log("Page became visible, checking if blocked"); // Debug log
     checkIfBlocked();
   }
 });
 
 // Check when page fully loads
 window.addEventListener("load", () => {
-  console.log("Page fully loaded, checking if blocked"); // Debug log
   checkIfBlocked();
 });
 
@@ -747,7 +682,6 @@ let currentUrl = location.href;
 setInterval(() => {
   if (location.href !== currentUrl) {
     currentUrl = location.href;
-    console.log("URL changed, checking if blocked"); // Debug log
     setTimeout(checkIfBlocked, 100); // Small delay for SPA navigation
   }
 }, 1000);
