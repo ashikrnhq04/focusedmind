@@ -1,4 +1,4 @@
-# FocusedMind 🎯
+# <a href='https://chromewebstore.google.com/detail/focusedmind/ignbmkkcgdkabggpcmdfhkgliajbnaid'>FocusedMind 🎯</a>
 
 **Be focused! Win the game.**
 
@@ -52,8 +52,6 @@ FocusedMind is a powerful Chrome extension designed to help you maintain laser-s
 3. Enable "Developer mode" in the top right
 4. Click "Load unpacked" and select the FocusedMind folder
 5. The extension icon will appear in your Chrome toolbar
-
-**This extension submitted to Chrome store and is under review. I'll add the extension URL once it's approved**
 
 ### Quick Start
 
