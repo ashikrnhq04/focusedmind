@@ -1,0 +1,13 @@
+
+
+// exclude any .zip files
+*.zip
+
+// exclude any .tar.gz files
+*.tar.gz
+
+// exclude any .crx files
+*.crx
+
+// exclude any .pem files
+*.pem
