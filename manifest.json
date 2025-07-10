@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FocusedMind",
   "version": "1.0.1",
-  "description": "Simply helps you stay focused by blocking distracting sites during your focus session. Both whitelist and blacklist features are available.",
+  "description": "Stay focused by blocking distracting sites during your focus session. Both whitelist and blacklist features are available.",
   "permissions": ["tabs", "storage", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
   "action": {
