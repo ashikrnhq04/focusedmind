@@ -64,6 +64,9 @@ async function loadFormData() {
 
     // Custom URLs are already loaded in loadCustomUrls function
   }
+
+  // Apply whitelist mode toggle after loading data
+  handleWhitelistModeToggle();
 }
 
 // Clear form data from storage (when focus starts)
@@ -108,6 +111,11 @@ function setupEventListeners() {
     .getElementById("exclude-input")
     .addEventListener("input", saveFormData);
 
+  // Handle whitelist mode toggle
+  document
+    .getElementById("exclude-input")
+    .addEventListener("input", handleWhitelistModeToggle);
+
   // Save when checkboxes change
   document
     .querySelectorAll('#categories input[type="checkbox"]')
@@ -123,6 +131,109 @@ function setupEventListeners() {
         await addCustomUrl();
       }
     });
+}
+
+function handleWhitelistModeToggle() {
+  const excludeInput = document.getElementById("exclude-input");
+  const excludeValue = excludeInput.value.trim();
+
+  // Check if there are valid URLs in the whitelist field
+  const hasValidUrls =
+    excludeValue.length > 0 && validateWhitelistUrls(excludeValue);
+
+  // Get all category checkboxes
+  const categoryCheckboxes = document.querySelectorAll(
+    '#categories input[type="checkbox"]'
+  );
+  const categoryLabels = document.querySelectorAll(
+    "#categories .checkbox-label"
+  );
+  const categoriesSection = document.getElementById("categories");
+  const whitelistNotice = document.getElementById("whitelist-notice");
+
+  // Get custom URL elements
+  const customUrlInput = document.getElementById("url-input");
+  const customUrlButton = document.getElementById("add-url");
+  const customUrlSection = document.getElementById("custom-urls");
+
+  if (hasValidUrls) {
+    // Show whitelist notice
+    whitelistNotice.style.display = "block";
+
+    // Disable category checkboxes
+    categoryCheckboxes.forEach((checkbox) => {
+      checkbox.disabled = true;
+      checkbox.checked = false; // Uncheck them
+    });
+
+    // Add visual styling to show disabled state
+    categoriesSection.style.opacity = "0.5";
+    categoryLabels.forEach((label) => {
+      label.style.cursor = "not-allowed";
+    });
+
+    // Disable custom URL input and button
+    customUrlInput.disabled = true;
+    customUrlButton.disabled = true;
+    customUrlSection.style.opacity = "0.5";
+
+    // Clear any selected categories and custom URLs when entering whitelist mode
+    if (customUrls.length > 0) {
+      customUrls.length = 0;
+      renderUrlList();
+      saveFormData();
+    }
+  } else {
+    // Hide whitelist notice
+    whitelistNotice.style.display = "none";
+
+    // Enable category checkboxes
+    categoryCheckboxes.forEach((checkbox) => {
+      checkbox.disabled = false;
+    });
+
+    // Remove visual styling
+    categoriesSection.style.opacity = "1";
+    categoryLabels.forEach((label) => {
+      label.style.cursor = "pointer";
+    });
+
+    // Enable custom URL input and button
+    customUrlInput.disabled = false;
+    customUrlButton.disabled = false;
+    customUrlSection.style.opacity = "1";
+  }
+}
+
+function validateWhitelistUrls(input) {
+  if (!input) return false;
+
+  const urls = input
+    .split(",")
+    .map((url) => url.trim())
+    .filter((url) => url.length > 0);
+
+  // Check if at least one URL looks valid
+  return urls.some((url) => {
+    // Basic URL validation - check if it contains at least a domain-like pattern
+    const domainPattern =
+      /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    // Clean the URL (remove protocol if present)
+    let cleanUrl = url;
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      try {
+        cleanUrl = new URL(url).hostname;
+      } catch (e) {
+        cleanUrl = url.replace(/^https?:\/\//, "");
+      }
+    }
+
+    // Remove www. prefix
+    cleanUrl = cleanUrl.replace(/^www\./, "");
+
+    return domainPattern.test(cleanUrl);
+  });
 }
 
 async function loadCustomUrls() {
@@ -432,10 +543,11 @@ async function stopFocus(showCompletion = false, isManualStop = false) {
   // Add the manual stop flag to session data
   sessionData.isManualStop = isManualStop;
 
-  // First clear all focus-related data
+  // Clear all focus-related data
   await chrome.storage.local.remove([
     "distractions",
     "focusActive",
+    "sessionCompleted",
     "task",
     "startTime",
     "endTime",
@@ -445,21 +557,18 @@ async function stopFocus(showCompletion = false, isManualStop = false) {
     "whitelistMode",
   ]);
 
-  // Then set clean default values
+  // Set clean default values
   await chrome.storage.local.set({
     focusActive: false,
     task: "",
     startTime: 0,
     endTime: 0,
-    distractions: 0, // Reset distraction count
+    distractions: 0,
     blockedCategories: [],
     customUrls: [],
     excludeSites: [],
     whitelistMode: false,
   });
-
-  // Verify the reset worked
-  const verifyData = await chrome.storage.local.get(["distractions"]);
 
   chrome.runtime.sendMessage({ type: "STOP_FOCUS" });
 
@@ -467,7 +576,7 @@ async function stopFocus(showCompletion = false, isManualStop = false) {
     clearInterval(countdownInterval);
   }
 
-  // Show completion view if the session ended naturally or if requested
+  // Show completion view if requested
   if (showCompletion) {
     switchToCompletionView(sessionData);
   } else {
@@ -480,6 +589,7 @@ async function resetToSetup() {
   await chrome.storage.local.remove([
     "distractions",
     "focusActive",
+    "sessionCompleted",
     "task",
     "startTime",
     "endTime",
@@ -495,6 +605,7 @@ async function resetToSetup() {
 async function checkFocusStatus() {
   const data = await chrome.storage.local.get([
     "focusActive",
+    "sessionCompleted",
     "endTime",
     "task",
     "distractions",
@@ -502,13 +613,25 @@ async function checkFocusStatus() {
   ]);
 
   if (data.focusActive && data.endTime && Date.now() < data.endTime) {
+    // Active session
     switchToActiveView();
     startCountdown();
-  } else if (data.focusActive && data.endTime && Date.now() >= data.endTime) {
-    // Focus session has ended naturally - show completion view
+  } else if (data.sessionCompleted && data.task) {
+    // Session has completed and needs to show completion view
+    data.isManualStop = false; // Natural completion (automatic expiry)
+    switchToCompletionView(data);
+  } else if (
+    !data.focusActive &&
+    data.endTime &&
+    Date.now() >= data.endTime &&
+    data.task
+  ) {
+    // Session ended but completion flag might not be set - handle gracefully
     data.isManualStop = false; // Natural completion
     switchToCompletionView(data);
-    await stopFocus(false, false); // Don't show completion again, not manual stop
+  } else {
+    // No active or completed session - show setup view
+    switchToSetupView();
   }
 }
 
@@ -517,20 +640,29 @@ function switchToActiveView() {
   document.getElementById("active-view").style.display = "block";
   document.body.classList.add("focus-active");
 
-  chrome.storage.local.get(["task", "distractions"], (data) => {
-    document.getElementById(
-      "task-display"
-    ).textContent = `Focusing on: ${data.task}`;
-    const distractionCount = data.distractions || 0;
-    document.getElementById("distraction-number").textContent =
-      distractionCount + " times";
+  chrome.storage.local.get(
+    ["task", "distractions", "startTime", "endTime"],
+    (data) => {
+      // Calculate session duration in minutes
+      const sessionDurationMs = data.endTime - data.startTime;
+      const sessionDurationMin = Math.floor(sessionDurationMs / 60000);
 
-    // Initialize efficiency display
-    const efficiencyElement = document.getElementById("efficiency-rating");
-    const efficiencyDisplay = document.getElementById("efficiency-display");
-    efficiencyElement.className = "excellent";
-    efficiencyDisplay.innerHTML = "Starting Strong &#128640;"; // 🚀 rocket as HTML entity
-  });
+      // Display task with session duration
+      document.getElementById(
+        "task-display"
+      ).textContent = `Focusing on: ${data.task} (${sessionDurationMin} mins session)`;
+
+      const distractionCount = data.distractions || 0;
+      document.getElementById("distraction-number").textContent =
+        distractionCount + " times";
+
+      // Initialize efficiency display
+      const efficiencyElement = document.getElementById("efficiency-rating");
+      const efficiencyDisplay = document.getElementById("efficiency-display");
+      efficiencyElement.className = "excellent";
+      efficiencyDisplay.innerHTML = "Starting Strong &#128640;"; // 🚀 rocket as HTML entity
+    }
+  );
 }
 
 function switchToSetupView() {
@@ -648,23 +780,12 @@ async function updateCountdown() {
   const timeLeft = data.endTime - now;
 
   if (timeLeft <= 0) {
-    // Session completed naturally - show completion view
+    // Session completed naturally - show completion view immediately
     document.getElementById("countdown").innerHTML =
-      '<span style="color: #28a745; font-weight: bold;">🎉 Focus session completed!</span>';
+      '<span style="color: #28a745; font-weight: bold;">&#127881; Focus session completed!</span>';
 
-    // Get final session data before stopping
-    const finalSessionData = await chrome.storage.local.get([
-      "task",
-      "startTime",
-      "endTime",
-      "distractions",
-    ]);
-
-    // Add flag to indicate natural completion
-    finalSessionData.isManualStop = false;
-
-    switchToCompletionView(finalSessionData);
-    await stopFocus(false, false); // Don't show completion again, not manual stop
+    // Stop focus and show completion view (stopFocus will handle getting session data)
+    await stopFocus(true, false); // Show completion, not manual stop
     return;
   }
 

@@ -187,6 +187,16 @@ button#add-url {
   font-style: italic;
 }
 
+.info-message {
+  font-size: 12px;
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
 #efficiency-rating {
   text-align: center;
   margin: 10px 0;
@@ -334,4 +344,28 @@ button#add-url {
 body.focus-completed {
   background-color: #d4edda;
   border: 2px solid #28a745;
+}
+
+/* Disabled form elements styles */
+input:disabled,
+button:disabled {
+  background-color: #e9ecef !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  border-color: #dee2e6 !important;
+}
+
+button:disabled:hover {
+  background-color: #e9ecef !important;
+}
+
+.checkbox-label input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+/* Whitelist mode disabled sections */
+#categories.disabled,
+#custom-urls.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }

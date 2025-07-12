@@ -439,6 +439,11 @@ function domainMatches(hostname, domain) {
 }
 
 function checkIfBlocked() {
+  // Only run blocking logic on top-level frame (not in iframes)
+  if (window !== window.top) {
+    return;
+  }
+
   chrome.storage.local.get(
     [
       "focusActive",
@@ -537,8 +542,39 @@ function checkIfBlocked() {
       }
 
       if (shouldBlock) {
+        // Check if we already showed an overlay for this URL to prevent duplicate distractions
+        const currentHostname = window.location.hostname;
+        const currentUrl = window.location.href;
+        const lastBlockedSite = sessionStorage.getItem(
+          "focusedmind_last_blocked"
+        );
+        const lastCheckTime = sessionStorage.getItem(
+          "focusedmind_last_check_time"
+        );
+        const currentTime = Date.now();
+
+        // Only increment distraction if:
+        // 1. This is a new blocked site
+        // 2. At least 2 seconds have passed since last check (prevent rapid triggers)
+        // 3. This is actually a user-initiated navigation (not a network request)
+        if (
+          lastBlockedSite !== currentHostname &&
+          (!lastCheckTime || currentTime - parseInt(lastCheckTime) > 2000)
+        ) {
+          // Only increment distraction if this is a new blocked site
+          sessionStorage.setItem("focusedmind_last_blocked", currentHostname);
+          sessionStorage.setItem(
+            "focusedmind_last_check_time",
+            currentTime.toString()
+          );
+          incrementDistraction();
+        }
+
         injectOverlay(data.task, blockReason);
-        incrementDistraction();
+      } else {
+        // Clear the last blocked site if we're not blocking
+        sessionStorage.removeItem("focusedmind_last_blocked");
+        sessionStorage.removeItem("focusedmind_last_check_time");
       }
     }
   );
@@ -593,13 +629,13 @@ function createOverlay(task, blockReason = "") {
 
   overlay.innerHTML = `
     <div style="max-width: 600px; padding: 40px; background-color: rgba(255, 255, 255, 0.1); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-      <h2 style="margin-bottom: 20px; font-size: 32px; color: white; font-weight: bold;">🔴 Focus Mode Active</h2>
+      <h2 style="margin-bottom: 20px; font-size: 32px; color: white; font-weight: bold;">&#128308; Focus Mode Active</h2>
       <p style="margin-bottom: 15px; font-size: 20px; color: white;">You're in focus mode and should focus on the task!</p>
       <p style="margin-bottom: 20px; font-size: 18px; font-style: italic; color: #ffeb3b;">Current task: "${
         task || "Your focus task"
       }"</p>
       ${reasonText}
-      <p style="font-size: 16px; opacity: 0.9; color: white; margin-bottom: 20px;">Close this tab and get back to work! 💪</p>
+      <p style="font-size: 16px; opacity: 0.9; color: white; margin-bottom: 20px;">Close this tab and get back to work! &#128170;</p>
       <button id="close-overlay" style="margin-top: 20px; padding: 10px 20px; background-color: white; color: #dc3545; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold;">Got it!</button>
     </div>
   `;
@@ -636,6 +672,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       existingOverlay.remove();
     }
     sendResponse({ success: true });
+  } else if (message.type === "RESET_DISTRACTION_TRACKING") {
+    // Clear session storage for distraction tracking
+    sessionStorage.removeItem("focusedmind_last_blocked");
+    sessionStorage.removeItem("focusedmind_last_check_time");
+    sendResponse({ success: true });
+  }
+});
+
+// Listen for storage changes to handle distraction tracking reset
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === "local" && changes.resetDistractionTracking) {
+    // Reset distraction tracking when background signals it
+    sessionStorage.removeItem("focusedmind_last_blocked");
+    sessionStorage.removeItem("focusedmind_last_check_time");
+  }
+
+  if (namespace === "local" && changes.focusActive) {
+    // If focus was stopped, remove any overlay
+    if (changes.focusActive.newValue === false) {
+      const existingOverlay = document.getElementById("focus-overlay");
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+    }
   }
 });
 
@@ -648,6 +708,11 @@ function incrementDistraction() {
 
 // Function to initialize checking
 function initializeBlocking() {
+  // Only run on top-level frame (not in iframes)
+  if (window !== window.top) {
+    return;
+  }
+
   // Prevent duplicate initialization
   if (window.focusModeInitialized) {
     checkIfBlocked();
@@ -667,21 +732,55 @@ if (document.readyState === "loading") {
 
 // Also check when the page becomes visible (in case user switches tabs back)
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) {
-    checkIfBlocked();
+  // Only run on top-level frame
+  if (window !== window.top) {
+    return;
+  }
+
+  if (!document.hidden && window.focusModeInitialized) {
+    // Small delay to avoid excessive checking
+    setTimeout(checkIfBlocked, 500);
   }
 });
 
 // Check when page fully loads
 window.addEventListener("load", () => {
-  checkIfBlocked();
+  // Only run on top-level frame
+  if (window !== window.top) {
+    return;
+  }
+
+  if (window.focusModeInitialized) {
+    setTimeout(checkIfBlocked, 300);
+  }
 });
 
 // Listen for navigation changes (for SPAs)
 let currentUrl = location.href;
+let urlCheckTimeout;
+
 setInterval(() => {
+  // Only run on top-level frame
+  if (window !== window.top) {
+    return;
+  }
+
   if (location.href !== currentUrl) {
     currentUrl = location.href;
-    setTimeout(checkIfBlocked, 100); // Small delay for SPA navigation
+
+    // Clear previous timeout to debounce rapid URL changes
+    if (urlCheckTimeout) {
+      clearTimeout(urlCheckTimeout);
+    }
+
+    // Clear the last blocked site when URL changes
+    sessionStorage.removeItem("focusedmind_last_blocked");
+    sessionStorage.removeItem("focusedmind_last_check_time");
+
+    urlCheckTimeout = setTimeout(() => {
+      if (window.focusModeInitialized) {
+        checkIfBlocked();
+      }
+    }, 800); // Increased delay for SPA navigation to reduce false triggers
   }
-}, 1000);
+}, 3000); // Check less frequently to reduce network-related triggers

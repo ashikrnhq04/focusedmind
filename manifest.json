@@ -3,8 +3,8 @@
   "name": "FocusedMind",
   "version": "1.0.2",
   "description": "Transform your browser into a productivity powerhouse. Block distractions, track focus, and build better concentration habits.",
-  "permissions": ["tabs", "storage", "activeTab", "scripting"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "incognito": "split",
   "action": {
     "default_popup": "popup.html",
@@ -19,8 +19,10 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "all_frames": false,
+      "run_at": "document_end"
     }
   ]
 }
