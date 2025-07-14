@@ -5,6 +5,81 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
+    <!-- Privacy Notice (shown on first use) -->
+    <div id="privacy-notice" class="privacy-notice" style="display: none">
+      <div class="privacy-content">
+        <h3>&#128274; Privacy Notice</h3>
+        <p>
+          <strong>FocusedMind needs to read website URLs</strong> to block
+          distracting sites during your focus sessions.
+        </p>
+        <div class="privacy-details">
+          <p>
+            &#9989; <strong>What we do:</strong> Check if current website should
+            be blocked
+          </p>
+          <p>
+            &#10060; <strong>What we don't do:</strong> Collect, store, or share
+            your browsing data
+          </p>
+          <p>
+            &#128187; <strong>All data stays local</strong> on your device -
+            nothing is sent to servers
+          </p>
+        </div>
+        <div class="privacy-actions">
+          <button id="accept-privacy" class="privacy-btn primary">
+            Got it, Let's Focus!
+          </button>
+          <button id="learn-more-privacy" class="privacy-btn secondary">
+            Learn More
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed Privacy Modal (shown when "Learn More" is clicked) -->
+    <div
+      id="privacy-details-modal"
+      class="privacy-notice"
+      style="display: none"
+    >
+      <div class="privacy-content detailed">
+        <h3>&#128274; Privacy Details</h3>
+        <div class="privacy-section">
+          <h4>What FocusedMind Does:</h4>
+          <p>&#9989; Reads website URLs to determine blocking rules</p>
+          <p>&#9989; Checks if current site matches your blocked categories</p>
+          <p>&#9989; Applies your custom URL blocking rules</p>
+          <p>&#9989; Implements whitelist mode for allowed sites</p>
+          <p>&#9989; Tracks focus session effectiveness</p>
+        </div>
+
+        <div class="privacy-section">
+          <h4>What We DON'T Do:</h4>
+          <p>&#10060; Collect personal data (names, emails, etc.)</p>
+          <p>&#10060; Send data to external servers</p>
+          <p>&#10060; Track your browsing history</p>
+          <p>&#10060; Share data with third parties</p>
+          <p>&#10060; Use analytics or tracking</p>
+        </div>
+
+        <div class="privacy-section">
+          <h4>Why URL Access is Needed:</h4>
+          <p>&#8226; Block distracting websites during focus sessions</p>
+          <p>&#8226; Apply your custom blocking rules</p>
+          <p>&#8226; Implement whitelist mode</p>
+          <p>&#8226; Track focus session effectiveness</p>
+        </div>
+
+        <div class="privacy-actions">
+          <button id="close-privacy-details" class="privacy-btn primary">
+            Got it, Let's Focus!
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div id="setup-view">
       <h1>FocusedMind</h1>
       <p class="text-center">Be focused! Win the game.</p>

@@ -5,6 +5,7 @@ let countdownInterval;
 document.addEventListener("DOMContentLoaded", async () => {
   await loadCustomUrls();
   await loadFormData(); // Load saved form data
+  await checkPrivacyNotice(); // Check if privacy notice should be shown
   await checkFocusStatus();
   setupEventListeners();
 });
@@ -131,6 +132,19 @@ function setupEventListeners() {
         await addCustomUrl();
       }
     });
+
+  // Privacy notice event listeners
+  document
+    .getElementById("accept-privacy")
+    .addEventListener("click", acceptPrivacyNotice);
+  document
+    .getElementById("learn-more-privacy")
+    .addEventListener("click", showPrivacyDetails);
+
+  // Privacy details modal event listener
+  document
+    .getElementById("close-privacy-details")
+    .addEventListener("click", acceptPrivacyNotice);
 }
 
 function handleWhitelistModeToggle() {
@@ -815,4 +829,34 @@ async function updateCountdown() {
     efficiencyElement.className = "excellent";
     efficiencyDisplay.innerHTML = "Starting Strong &#128640;"; // 🚀 rocket as HTML entity
   }
+}
+
+// Check if privacy notice should be shown (first time use)
+async function checkPrivacyNotice() {
+  const data = await chrome.storage.local.get(["privacyNoticeAccepted"]);
+
+  if (!data.privacyNoticeAccepted) {
+    // Show privacy notice on first use
+    document.getElementById("privacy-notice").style.display = "flex";
+    document.getElementById("setup-view").style.display = "none";
+    document.getElementById("active-view").style.display = "none";
+    document.getElementById("completion-view").style.display = "none";
+  }
+}
+
+// Handle privacy notice acceptance
+async function acceptPrivacyNotice() {
+  await chrome.storage.local.set({ privacyNoticeAccepted: true });
+  document.getElementById("privacy-notice").style.display = "none";
+  document.getElementById("privacy-details-modal").style.display = "none";
+  // Continue with normal initialization
+  await checkFocusStatus();
+}
+
+// Show privacy policy details
+function showPrivacyDetails() {
+  // Hide the basic privacy notice
+  document.getElementById("privacy-notice").style.display = "none";
+  // Show the detailed privacy modal
+  document.getElementById("privacy-details-modal").style.display = "flex";
 }

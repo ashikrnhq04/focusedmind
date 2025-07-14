@@ -1,9 +1,34 @@
 # Changelog - FocusedMind Extension
 
-## Version 1.0.2 (Latest)
+## Version 1.0.4 (Latest)
+
+### 🔒 Privacy & Transparency Improvements
+
+- **Privacy Notice**: Added first-time privacy notice explaining URL access requirement
+- **Enhanced Description**: Updated manifest description to clearly state URL reading requirement
+- **Privacy Policy**: Added comprehensive privacy policy documentation
+- **User Control**: Added "Learn More" option for detailed privacy information
+- **Fixed Privacy Modal Icons**: Replaced broken Unicode characters with HTML entities
+
+### 🐛 Bug Fixes
+
+- **Privacy Modal Icons**: Fixed broken icons in "Learn More" popup by using HTML entities
+- **Improved Privacy UX**: Replaced basic alert with proper modal dialog for privacy details
 
 ### 🆕 New Features
 
+- **Enhanced Task Display**: Active session now shows task name with session duration
+  - Format: "Focusing on: [Task Name] ([Duration] mins session)"
+  - Example: "Focusing on: Reading docs (20 mins session)"
+
+## Version 1.0.2
+
+### 🆕 New Features
+
+- Added completion view with session statistics
+- Implemented contextual motivational messages
+- Added incognito mode support
+- Implemented whitelist mode with UI logic
 - **Enhanced Task Display**: Active session now shows task name with session duration
   - Format: "Focusing on: [Task Name] ([Duration] mins session)"
   - Example: "Focusing on: Reading docs (20 mins session)"
@@ -29,22 +54,6 @@
 - Refactored background script to use minimal permissions
 - Added storage change listeners for secure communication
 - Improved content script isolation and performance
-
-## Version 1.0.2
-
-### 🆕 Features
-
-- Added completion view with session statistics
-- Implemented contextual motivational messages
-- Added incognito mode support
-- Implemented whitelist mode with UI logic
-
-### 🎨 UX Improvements
-
-- Added efficiency ratings with HTML entity icons
-- Improved form validation and error handling
-- Added visual feedback for disabled states
-- Enhanced completion view styling
 
 ## Version 1.0.1
 

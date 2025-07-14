@@ -369,3 +369,109 @@ button:disabled:hover {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* Privacy Notice Styles */
+.privacy-notice {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.privacy-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 280px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.privacy-content h3 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.privacy-content p {
+  margin: 10px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.privacy-details {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 15px 0;
+  text-align: left;
+}
+
+.privacy-details p {
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.privacy-actions {
+  margin-top: 20px;
+}
+
+.privacy-btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.privacy-btn.primary {
+  background-color: #28a745;
+  color: white;
+}
+
+.privacy-btn.primary:hover {
+  background-color: #218838;
+}
+
+.privacy-btn.secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.privacy-btn.secondary:hover {
+  background-color: #5a6268;
+}
+
+/* Detailed Privacy Modal Styles */
+.privacy-content.detailed {
+  max-width: 320px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.privacy-section {
+  margin: 15px 0;
+  text-align: left;
+}
+
+.privacy-section h4 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.privacy-section p {
+  margin: 5px 0;
+  font-size: 12px;
+  line-height: 1.3;
+  padding-left: 5px;
+}

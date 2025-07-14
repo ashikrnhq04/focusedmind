@@ -20,6 +20,14 @@ This document lists all the HTML entity icons used in the FocusedMind extension 
 - **🔴 Red Circle** - `&#128308;` - Used in Focus Mode Active overlay
 - **💪 Muscle** - `&#128170;` - Used in "get back to work" message
 
+### Privacy Notice Icons
+
+- **🔒 Lock** - `&#128274;` - Used in privacy notice headers
+- **✅ Check Mark** - `&#9989;` - Used for "what we do" statements
+- **❌ Cross Mark** - `&#10060;` - Used for "what we don't do" statements
+- **💻 Computer** - `&#128187;` - Used for "local data" statements
+- **• Bullet Point** - `&#8226;` - Used for list items in privacy details
+
 ## Usage Guidelines
 
 1. **Consistency**: Always use HTML entities instead of Unicode emojis
