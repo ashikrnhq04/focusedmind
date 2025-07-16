@@ -1,6 +1,6 @@
 # Changelog - FocusedMind Extension
 
-## Version 1.0.4 (Latest)
+## Version 1.4.3 (Latest)
 
 ### 🔒 Privacy & Transparency Improvements
 

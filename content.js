@@ -444,140 +444,181 @@ function checkIfBlocked() {
     return;
   }
 
-  chrome.storage.local.get(
-    [
-      "focusActive",
-      "endTime",
-      "distractions",
-      "task",
-      "blockedCategories",
-      "customUrls",
-      "excludeSites",
-      "whitelistMode",
-    ],
-    (data) => {
-      if (!data.focusActive || Date.now() >= data.endTime) {
-        // Remove any existing overlay when focus is not active
-        const existingOverlay = document.getElementById("focus-overlay");
-        if (existingOverlay) {
-          existingOverlay.remove();
-        }
-        return;
-      }
+  // Check if Chrome APIs are available
+  if (!chrome || !chrome.storage || !chrome?.storage?.local) {
+    // Chrome APIs not available, likely extension is disabled/reloading
+    // Remove any existing overlay as a fallback
+    const existingOverlay = document.getElementById("focus-overlay");
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+    return;
+  }
 
-      const hostname = window.location.hostname;
-      const blockedCategories = data.blockedCategories || [];
-      const customUrls = data.customUrls || [];
-      const excludeSites = data.excludeSites || [];
-      const whitelistMode = data.whitelistMode || false;
-
-      let shouldBlock = false;
-      let blockReason = "";
-
-      // WHITELIST MODE: If exclude sites are specified, block everything except those sites
-      // This mode takes priority over all other blocking rules
-      if (excludeSites.length > 0) {
-        let isInWhitelist = false;
-
-        for (const excludeSite of excludeSites) {
-          if (domainMatches(hostname, excludeSite)) {
-            isInWhitelist = true;
-            break;
-          }
+  try {
+    chrome.storage.local.get(
+      [
+        "focusActive",
+        "endTime",
+        "distractions",
+        "task",
+        "blockedCategories",
+        "customUrls",
+        "excludeSites",
+        "whitelistMode",
+      ],
+      (data) => {
+        // Handle potential Chrome runtime errors
+        if (chrome.runtime.lastError) {
+          console.warn(
+            "FocusedMind: Chrome runtime error:",
+            chrome.runtime.lastError
+          );
+          return;
         }
 
-        if (!isInWhitelist) {
-          shouldBlock = true;
-          blockReason = "whitelist mode (site not in allowed list)";
-        }
-      } else {
-        // NORMAL BLOCKING MODE: Use categories and custom URLs
-
-        // Special check for YouTube entertainment content
-        if (
-          blockedCategories.includes("entertainment") &&
-          isYouTubeEntertainment()
-        ) {
-          shouldBlock = true;
-          blockReason = "entertainment (YouTube content)";
-        }
-
-        // Check custom URLs first
-        if (!shouldBlock) {
-          for (const url of customUrls) {
-            if (domainMatches(hostname, url)) {
-              shouldBlock = true;
-              blockReason = "custom";
-              break;
+        try {
+          if (!data.focusActive || Date.now() >= data.endTime) {
+            // Remove any existing overlay when focus is not active
+            const existingOverlay = document.getElementById("focus-overlay");
+            if (existingOverlay) {
+              existingOverlay.remove();
             }
+            return;
           }
-        }
 
-        // Check category-based blocking
-        if (!shouldBlock && blockedCategories.length > 0) {
-          // First check known sites
-          for (const domain in knownSites) {
-            if (domainMatches(hostname, domain)) {
-              const category = knownSites[domain];
-              if (blockedCategories.includes(category)) {
-                shouldBlock = true;
-                blockReason = category;
+          const hostname = window.location.hostname;
+          const blockedCategories = data.blockedCategories || [];
+          const customUrls = data.customUrls || [];
+          const excludeSites = data.excludeSites || [];
+          const whitelistMode = data.whitelistMode || false;
+
+          let shouldBlock = false;
+          let blockReason = "";
+
+          // WHITELIST MODE: If exclude sites are specified, block everything except those sites
+          // This mode takes priority over all other blocking rules
+          if (excludeSites.length > 0) {
+            let isInWhitelist = false;
+
+            for (const excludeSite of excludeSites) {
+              if (domainMatches(hostname, excludeSite)) {
+                isInWhitelist = true;
                 break;
+              }
+            }
+
+            if (!isInWhitelist) {
+              shouldBlock = true;
+              blockReason = "whitelist mode (site not in allowed list)";
+            }
+          } else {
+            // NORMAL BLOCKING MODE: Use categories and custom URLs
+
+            // Special check for YouTube entertainment content
+            if (
+              blockedCategories.includes("entertainment") &&
+              isYouTubeEntertainment()
+            ) {
+              shouldBlock = true;
+              blockReason = "entertainment (YouTube content)";
+            }
+
+            // Check custom URLs first
+            if (!shouldBlock) {
+              for (const url of customUrls) {
+                if (domainMatches(hostname, url)) {
+                  shouldBlock = true;
+                  blockReason = "custom";
+                  break;
+                }
+              }
+            }
+
+            // Check category-based blocking
+            if (!shouldBlock && blockedCategories.length > 0) {
+              // First check known sites
+              for (const domain in knownSites) {
+                if (domainMatches(hostname, domain)) {
+                  const category = knownSites[domain];
+                  if (blockedCategories.includes(category)) {
+                    shouldBlock = true;
+                    blockReason = category;
+                    break;
+                  }
+                }
+              }
+
+              // If not found in known sites, check patterns and content
+              if (!shouldBlock) {
+                const detectedCategory = getCategoryForDomain(hostname);
+                if (
+                  detectedCategory &&
+                  blockedCategories.includes(detectedCategory)
+                ) {
+                  shouldBlock = true;
+                  blockReason = detectedCategory;
+                }
               }
             }
           }
 
-          // If not found in known sites, check patterns and content
-          if (!shouldBlock) {
-            const detectedCategory = getCategoryForDomain(hostname);
+          if (shouldBlock) {
+            // Check if we already showed an overlay for this URL to prevent duplicate distractions
+            const currentHostname = window.location.hostname;
+            const currentUrl = window.location.href;
+            const lastBlockedSite = sessionStorage.getItem(
+              "focusedmind_last_blocked"
+            );
+            const lastCheckTime = sessionStorage.getItem(
+              "focusedmind_last_check_time"
+            );
+            const currentTime = Date.now();
+
+            // Only increment distraction if:
+            // 1. This is a new blocked site
+            // 2. At least 2 seconds have passed since last check (prevent rapid triggers)
+            // 3. This is actually a user-initiated navigation (not a network request)
             if (
-              detectedCategory &&
-              blockedCategories.includes(detectedCategory)
+              lastBlockedSite !== currentHostname &&
+              (!lastCheckTime || currentTime - parseInt(lastCheckTime) > 2000)
             ) {
-              shouldBlock = true;
-              blockReason = detectedCategory;
+              // Only increment distraction if this is a new blocked site
+              sessionStorage.setItem(
+                "focusedmind_last_blocked",
+                currentHostname
+              );
+              sessionStorage.setItem(
+                "focusedmind_last_check_time",
+                currentTime.toString()
+              );
+              incrementDistraction();
             }
+
+            injectOverlay(data.task, blockReason);
+          } else {
+            // Clear the last blocked site if we're not blocking
+            sessionStorage.removeItem("focusedmind_last_blocked");
+            sessionStorage.removeItem("focusedmind_last_check_time");
+          }
+        } catch (error) {
+          console.warn("FocusedMind: Error in checkIfBlocked:", error);
+          // Remove any existing overlay as a fallback
+          const existingOverlay = document.getElementById("focus-overlay");
+          if (existingOverlay) {
+            existingOverlay.remove();
           }
         }
       }
-
-      if (shouldBlock) {
-        // Check if we already showed an overlay for this URL to prevent duplicate distractions
-        const currentHostname = window.location.hostname;
-        const currentUrl = window.location.href;
-        const lastBlockedSite = sessionStorage.getItem(
-          "focusedmind_last_blocked"
-        );
-        const lastCheckTime = sessionStorage.getItem(
-          "focusedmind_last_check_time"
-        );
-        const currentTime = Date.now();
-
-        // Only increment distraction if:
-        // 1. This is a new blocked site
-        // 2. At least 2 seconds have passed since last check (prevent rapid triggers)
-        // 3. This is actually a user-initiated navigation (not a network request)
-        if (
-          lastBlockedSite !== currentHostname &&
-          (!lastCheckTime || currentTime - parseInt(lastCheckTime) > 2000)
-        ) {
-          // Only increment distraction if this is a new blocked site
-          sessionStorage.setItem("focusedmind_last_blocked", currentHostname);
-          sessionStorage.setItem(
-            "focusedmind_last_check_time",
-            currentTime.toString()
-          );
-          incrementDistraction();
-        }
-
-        injectOverlay(data.task, blockReason);
-      } else {
-        // Clear the last blocked site if we're not blocking
-        sessionStorage.removeItem("focusedmind_last_blocked");
-        sessionStorage.removeItem("focusedmind_last_check_time");
-      }
+    );
+  } catch (error) {
+    console.warn("FocusedMind: Error accessing Chrome storage:", error);
+    // Remove any existing overlay as a fallback
+    const existingOverlay = document.getElementById("focus-overlay");
+    if (existingOverlay) {
+      existingOverlay.remove();
     }
-  );
+  }
 }
 
 function injectOverlay(task, blockReason = "") {
@@ -665,51 +706,99 @@ function createOverlay(task, blockReason = "") {
 }
 
 // Listen for messages from background script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "REMOVE_OVERLAY") {
-    const existingOverlay = document.getElementById("focus-overlay");
-    if (existingOverlay) {
-      existingOverlay.remove();
+if (chrome && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    try {
+      if (message.type === "REMOVE_OVERLAY") {
+        const existingOverlay = document.getElementById("focus-overlay");
+        if (existingOverlay) {
+          existingOverlay.remove();
+        }
+        sendResponse({ success: true });
+      } else if (message.type === "RESET_DISTRACTION_TRACKING") {
+        // Clear session storage for distraction tracking
+        sessionStorage.removeItem("focusedmind_last_blocked");
+        sessionStorage.removeItem("focusedmind_last_check_time");
+        sendResponse({ success: true });
+      }
+    } catch (error) {
+      console.warn("FocusedMind: Error in message listener:", error);
+      sendResponse({ success: false, error: error.message });
     }
-    sendResponse({ success: true });
-  } else if (message.type === "RESET_DISTRACTION_TRACKING") {
-    // Clear session storage for distraction tracking
-    sessionStorage.removeItem("focusedmind_last_blocked");
-    sessionStorage.removeItem("focusedmind_last_check_time");
-    sendResponse({ success: true });
-  }
-});
+  });
+}
 
 // Listen for storage changes to handle distraction tracking reset
-chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === "local" && changes.resetDistractionTracking) {
-    // Reset distraction tracking when background signals it
-    sessionStorage.removeItem("focusedmind_last_blocked");
-    sessionStorage.removeItem("focusedmind_last_check_time");
-  }
-
-  if (namespace === "local" && changes.focusActive) {
-    // If focus was stopped, remove any overlay
-    if (changes.focusActive.newValue === false) {
-      const existingOverlay = document.getElementById("focus-overlay");
-      if (existingOverlay) {
-        existingOverlay.remove();
+if (chrome && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    try {
+      if (namespace === "local" && changes.resetDistractionTracking) {
+        // Reset distraction tracking when background signals it
+        sessionStorage.removeItem("focusedmind_last_blocked");
+        sessionStorage.removeItem("focusedmind_last_check_time");
       }
+
+      if (namespace === "local" && changes.focusActive) {
+        // If focus was stopped, remove any overlay
+        if (changes.focusActive.newValue === false) {
+          const existingOverlay = document.getElementById("focus-overlay");
+          if (existingOverlay) {
+            existingOverlay.remove();
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("FocusedMind: Error in storage change listener:", error);
     }
-  }
-});
+  });
+}
 
 function incrementDistraction() {
-  chrome.storage.local.get("distractions", (data) => {
-    let count = data.distractions || 0;
-    chrome.storage.local.set({ distractions: count + 1 });
-  });
+  // Check if Chrome APIs are available
+  if (!chrome || !chrome.storage || !chrome.storage.local) {
+    console.warn(
+      "FocusedMind: Chrome APIs not available for incrementDistraction"
+    );
+    return;
+  }
+
+  try {
+    chrome.storage.local.get("distractions", (data) => {
+      if (chrome.runtime.lastError) {
+        console.warn(
+          "FocusedMind: Error getting distractions:",
+          chrome.runtime.lastError
+        );
+        return;
+      }
+
+      let count = data.distractions || 0;
+      chrome.storage.local.set({ distractions: count + 1 }, () => {
+        if (chrome.runtime.lastError) {
+          console.warn(
+            "FocusedMind: Error setting distractions:",
+            chrome.runtime.lastError
+          );
+        }
+      });
+    });
+  } catch (error) {
+    console.warn("FocusedMind: Error in incrementDistraction:", error);
+  }
 }
 
 // Function to initialize checking
 function initializeBlocking() {
   // Only run on top-level frame (not in iframes)
   if (window !== window.top) {
+    return;
+  }
+
+  // Check if Chrome APIs are available before initializing
+  if (!chrome || !chrome.storage || !chrome.storage.local) {
+    console.warn(
+      "FocusedMind: Chrome APIs not available during initialization"
+    );
     return;
   }
 

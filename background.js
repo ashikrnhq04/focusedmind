@@ -3,14 +3,28 @@
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.type === "START_FOCUS") {
     // Set badge to show focus is active
-    chrome.action.setBadgeText({ text: "ON" });
-    chrome.action.setBadgeBackgroundColor({ color: "#28a745" });
+    // Use tabId if available for incognito support
+    const badgeOptions = { text: "ON" };
+    if (sender.tab && sender.tab.id) {
+      badgeOptions.tabId = sender.tab.id;
+    }
+    chrome.action.setBadgeText(badgeOptions);
+
+    const colorOptions = { color: "#28a745" };
+    if (sender.tab && sender.tab.id) {
+      colorOptions.tabId = sender.tab.id;
+    }
+    chrome.action.setBadgeBackgroundColor(colorOptions);
 
     // Send message to all content scripts to reset distraction tracking
     await resetDistractionTracking();
   } else if (message.type === "STOP_FOCUS") {
     // Clear badge
-    chrome.action.setBadgeText({ text: "" });
+    const badgeOptions = { text: "" };
+    if (sender.tab && sender.tab.id) {
+      badgeOptions.tabId = sender.tab.id;
+    }
+    chrome.action.setBadgeText(badgeOptions);
 
     // Send message to all content scripts to remove overlays and reset tracking
     await resetDistractionTracking();

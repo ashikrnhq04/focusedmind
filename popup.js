@@ -6,9 +6,52 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadCustomUrls();
   await loadFormData(); // Load saved form data
   await checkPrivacyNotice(); // Check if privacy notice should be shown
+  await checkIncognitoStatus(); // Check if in incognito and guide user
   await checkFocusStatus();
   setupEventListeners();
 });
+
+// Check if extension is running in incognito mode and show guidance if needed
+async function checkIncognitoStatus() {
+  try {
+    // Check if we're in incognito mode
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].incognito) {
+      // We're in incognito mode, show a notice that the extension is working
+      showIncognitoNotice();
+    }
+  } catch (error) {
+    // If we can't query tabs, we might not have permission or not be in incognito
+    // This is fine, just continue normally
+  }
+}
+
+// Show incognito notice
+function showIncognitoNotice() {
+  const existingNotice = document.getElementById("incognito-notice");
+  if (!existingNotice) {
+    const notice = document.createElement("div");
+    notice.id = "incognito-notice";
+    notice.className = "info-message";
+    notice.innerHTML = `
+      <div style="margin-bottom: 10px;">
+        <strong>&#128274; Incognito Mode Detected</strong>
+      </div>
+      <div style="font-size: 12px; color: #666;">
+        Extension is working in incognito mode. Your focus sessions are private and won't be stored in regular browsing history.
+      </div>
+    `;
+    notice.style.marginBottom = "15px";
+    notice.style.padding = "10px";
+    notice.style.backgroundColor = "#e8f4f8";
+    notice.style.border = "1px solid #bee5eb";
+    notice.style.borderRadius = "4px";
+
+    const setupView = document.getElementById("setup-view");
+    const title = setupView.querySelector("h1");
+    title.parentNode.insertBefore(notice, title.nextSibling);
+  }
+}
 
 // Save form data to storage
 async function saveFormData() {

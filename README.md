@@ -24,11 +24,6 @@ FocusedMind is a powerful Chrome extension designed to help you maintain laser-s
 
 - **Distraction counter**: Live tracking of blocked website visits
 - **Efficiency rating**: Dynamic performance metrics with visual feedback
-  - 🎯 Excellent (0-2 distractions)
-  - 👍 Good (3-4 distractions)
-  - 😐 Average (5-6 distractions)
-  - 😬 Poor (7-8 distractions)
-  - 😵 Distracted (9+ distractions)
 
 ### 🎉 **Motivational Completion System**
 
